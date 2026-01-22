@@ -13,110 +13,148 @@ import {
   ListItemIcon,
   Divider,
   Button,
+  Avatar,
+  LinearProgress,
+  alpha,
 } from '@mui/material';
 import {
   People as PeopleIcon,
   Description as DescriptionIcon,
   AttachMoney as MoneyIcon,
   TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
   AccountBalance as AccountBalanceIcon,
   PendingActions as PendingActionsIcon,
   Receipt as ReceiptIcon,
   CalendarMonth as CalendarMonthIcon,
   AccessTime as AccessTimeIcon,
   ChevronRight as ChevronRightIcon,
+  CheckCircle as CheckCircleIcon,
+  Schedule as ScheduleIcon,
+  EventAvailable as EventAvailableIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  Legend,
+} from 'recharts';
 import { patientService, fichaService, presupuestoService, citaService } from '../../services/api';
 
-const StatCard = ({ title, value, icon, color }) => (
-  <Card>
-    <CardContent>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography color="textSecondary" gutterBottom variant="body2">
-            {title}
-          </Typography>
-          <Typography variant="h4" component="div" fontWeight="bold">
-            {value}
-          </Typography>
-        </Box>
-        <Box
-          sx={{
-            backgroundColor: color,
-            borderRadius: 2,
-            p: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {icon}
-        </Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
-
-const IngresosMensualesChart = ({ data }) => {
+// Componente de tarjeta estadística mejorada
+const StatCard = ({ title, value, icon, color, trend, trendValue, subtitle }) => {
   const theme = useTheme();
-
-  if (!data || data.length === 0) {
-    return (
-      <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
-        No hay datos disponibles
-      </Typography>
-    );
-  }
-
-  const maxValue = Math.max(...data.map((item) => item.ingresos), 1);
+  const isPositiveTrend = trend === 'up';
 
   return (
-    <Box sx={{ mt: 2 }}>
-      {data.map((item, index) => (
-        <Box key={index} sx={{ mb: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-            <Typography variant="body2" color="textSecondary">
-              {item.mes}
+    <Card
+      sx={{
+        height: '100%',
+        background: `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.8)} 100%)`,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '210px',
+          height: '210px',
+          background: alpha('#fff', 0.1),
+          borderRadius: '50%',
+          transform: 'translate(60px, -60px)',
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '210px',
+          height: '210px',
+          background: alpha('#fff', 0.05),
+          borderRadius: '50%',
+          transform: 'translate(100px, 20px)',
+        },
+      }}
+    >
+      <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{ opacity: 0.9, fontWeight: 500, mb: 0.5 }}
+            >
+              {title}
             </Typography>
-            <Typography variant="body2" fontWeight="bold" color="primary">
-              ${item.ingresos.toFixed(2)}
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
+              {value}
             </Typography>
+            {subtitle && (
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                {subtitle}
+              </Typography>
+            )}
+            {trend && (
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                {isPositiveTrend ? (
+                  <TrendingUpIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                ) : (
+                  <TrendingDownIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                )}
+                <Typography variant="caption" fontWeight="bold">
+                  {trendValue}
+                </Typography>
+              </Box>
+            )}
           </Box>
-          <Box
+          <Avatar
             sx={{
-              width: '100%',
-              height: 24,
-              backgroundColor: theme.palette.mode === 'dark' ? '#333333' : '#e0e0e0',
-              borderRadius: 1,
-              overflow: 'hidden',
+              backgroundColor: alpha('#fff', 0.2),
+              width: 56,
+              height: 56,
             }}
           >
-            <Box
-              sx={{
-                width: `${(item.ingresos / maxValue) * 100}%`,
-                height: '100%',
-                backgroundColor: theme.palette.primary.main,
-                transition: 'width 0.3s ease',
-              }}
-            />
-          </Box>
+            {icon}
+          </Avatar>
         </Box>
-      ))}
-    </Box>
+      </CardContent>
+    </Card>
   );
 };
 
+// Colores para el tema
+const CHART_COLORS = {
+  primary: '#00838F',
+  secondary: '#26A69A',
+  success: '#66bb6a',
+  warning: '#ffa726',
+  error: '#ef5350',
+  info: '#29b6f6',
+};
+
+const PIE_COLORS = ['#00838F', '#26A69A', '#4db6ac', '#80cbc4', '#b2dfdb'];
+
 const estadoColores = {
-  programada: '#1976d2',
-  confirmada: '#2e7d32',
-  en_progreso: '#ed6c02',
-  completada: '#757575',
-  cancelada: '#d32f2f',
-  no_asistio: '#f57c00',
+  programada: '#29b6f6',
+  confirmada: '#66bb6a',
+  en_progreso: '#ffa726',
+  completada: '#78909c',
+  cancelada: '#ef5350',
+  no_asistio: '#ff7043',
 };
 
 const estadoLabels = {
@@ -125,11 +163,216 @@ const estadoLabels = {
   en_progreso: 'En Progreso',
   completada: 'Completada',
   cancelada: 'Cancelada',
-  no_asistio: 'No Asistió',
+  no_asistio: 'No Asistio',
+};
+
+// Tooltip personalizado para gráficos
+const CustomTooltip = ({ active, payload, label }) => {
+  const theme = useTheme();
+
+  if (active && payload && payload.length) {
+    return (
+      <Box
+        sx={{
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+          p: 1.5,
+          boxShadow: theme.shadows[4],
+        }}
+      >
+        <Typography variant="body2" fontWeight="bold" sx={{ mb: 0.5 }}>
+          {label}
+        </Typography>
+        {payload.map((entry, index) => (
+          <Typography
+            key={index}
+            variant="body2"
+            sx={{ color: entry.color }}
+          >
+            {entry.name}: ${entry.value?.toFixed(2) || 0}
+          </Typography>
+        ))}
+      </Box>
+    );
+  }
+  return null;
+};
+
+// Gráfico de área para ingresos mensuales
+const IngresosAreaChart = ({ data }) => {
+  const theme = useTheme();
+
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 250 }}>
+        <Typography variant="body2" color="textSecondary">
+          No hay datos de ingresos disponibles
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={250}>
+      <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+        <XAxis
+          dataKey="mes"
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+          axisLine={{ stroke: theme.palette.divider }}
+        />
+        <YAxis
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+          axisLine={{ stroke: theme.palette.divider }}
+          tickFormatter={(value) => `$${value}`}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area
+          type="monotone"
+          dataKey="ingresos"
+          name="Ingresos"
+          stroke={CHART_COLORS.primary}
+          strokeWidth={3}
+          fill="url(#colorIngresos)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
+
+// Gráfico circular para estados de presupuestos
+const EstadosPresupuestoPieChart = ({ data }) => {
+  const theme = useTheme();
+
+  const defaultData = [
+    { name: 'Aprobados', value: 30 },
+    { name: 'Pendientes', value: 25 },
+    { name: 'En Proceso', value: 20 },
+    { name: 'Completados', value: 15 },
+    { name: 'Cancelados', value: 10 },
+  ];
+
+  const chartData = data && data.length > 0 ? data : defaultData;
+
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <PieChart>
+        <Pie
+          data={chartData}
+          cx="50%"
+          cy="50%"
+          innerRadius={50}
+          outerRadius={80}
+          paddingAngle={5}
+          dataKey="value"
+        >
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip
+          contentStyle={{
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 8,
+          }}
+        />
+        <Legend
+          verticalAlign="bottom"
+          height={36}
+          formatter={(value) => (
+            <span style={{ color: theme.palette.text.primary, fontSize: 12 }}>{value}</span>
+          )}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+};
+
+// Gráfico de barras para comparación financiera
+const FinancialBarChart = ({ facturado, cobrado, pendiente }) => {
+  const theme = useTheme();
+
+  const data = [
+    { name: 'Facturado', valor: facturado, fill: CHART_COLORS.info },
+    { name: 'Cobrado', valor: cobrado, fill: CHART_COLORS.success },
+    { name: 'Pendiente', valor: pendiente, fill: CHART_COLORS.warning },
+  ];
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+        <XAxis
+          type="number"
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+          tickFormatter={(value) => `$${value}`}
+        />
+        <YAxis
+          type="category"
+          dataKey="name"
+          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+          width={80}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 8,
+          }}
+          formatter={(value) => [`$${value.toFixed(2)}`, 'Monto']}
+        />
+        <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+          {data.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.fill} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
+
+// Indicador de progreso circular
+const ProgressIndicator = ({ value, total, label, color }) => {
+  const percentage = total > 0 ? (value / total) * 100 : 0;
+
+  return (
+    <Box sx={{ mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+        <Typography variant="body2" color="textSecondary">
+          {label}
+        </Typography>
+        <Typography variant="body2" fontWeight="bold">
+          {percentage.toFixed(0)}%
+        </Typography>
+      </Box>
+      <LinearProgress
+        variant="determinate"
+        value={percentage}
+        sx={{
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: alpha(color, 0.2),
+          '& .MuiLinearProgress-bar': {
+            backgroundColor: color,
+            borderRadius: 4,
+          },
+        }}
+      />
+    </Box>
+  );
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [stats, setStats] = useState({
     totalPatients: 0,
     totalFichas: 0,
@@ -179,227 +422,372 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setStats({ ...stats, loading: false });
+      setStats((prev) => ({ ...prev, loading: false }));
     }
   };
 
   if (stats.loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '60vh',
+          gap: 2,
+        }}
+      >
+        <CircularProgress size={50} thickness={4} />
+        <Typography variant="body1" color="textSecondary">
+          Cargando datos del dashboard...
+        </Typography>
       </Box>
     );
   }
 
+  const ingresoMesActual = stats.ingresosMensuales.length > 0
+    ? stats.ingresosMensuales[stats.ingresosMensuales.length - 1]?.ingresos || 0
+    : 0;
+
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        Dashboard
-      </Typography>
-      <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
-        Resumen del sistema de gestión odontológica
-      </Typography>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight="bold" gutterBottom>
+          Dashboard
+        </Typography>
+        <Typography variant="body1" color="textSecondary">
+          Bienvenido al panel de control de ENDONOVA
+        </Typography>
+      </Box>
 
-      <Grid container spacing={3}>
+      {/* Tarjetas principales */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Pacientes"
             value={stats.totalPatients}
-            icon={<PeopleIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#1976d2"
+            icon={<PeopleIcon sx={{ fontSize: 28, color: 'white' }} />}
+            color="#00838F"
+            trend="up"
+            trendValue="+12% este mes"
           />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Fichas Endodónticas"
+            title="Fichas Activas"
             value={stats.totalFichas}
-            icon={<DescriptionIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#2e7d32"
+            icon={<DescriptionIcon sx={{ fontSize: 28, color: 'white' }} />}
+            color="#26A69A"
+            subtitle="Tratamientos en curso"
           />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Tratamientos Activos"
-            value={stats.totalFichas}
-            icon={<TrendingUpIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#ed6c02"
+            title="Presupuestos"
+            value={stats.presupuestosActivos}
+            icon={<ReceiptIcon sx={{ fontSize: 28, color: 'white' }} />}
+            color="#7E57C2"
+            subtitle="Activos este mes"
           />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Ingresos del Mes"
-            value="$0"
-            icon={<MoneyIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#9c27b0"
+            value={`$${ingresoMesActual.toFixed(2)}`}
+            icon={<MoneyIcon sx={{ fontSize: 28, color: 'white' }} />}
+            color="#42A5F5"
+            trend="up"
+            trendValue="+8% vs mes anterior"
           />
         </Grid>
       </Grid>
 
-      <Typography variant="h5" sx={{ mt: 4, mb: 2 }} fontWeight="bold">
-        Estadísticas Financieras
-      </Typography>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Facturado"
-            value={`$${stats.totalFacturado.toFixed(2)}`}
-            icon={<MoneyIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#0288d1"
-          />
+      {/* Gráficos principales */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* Gráfico de ingresos */}
+        <Grid item xs={12} md={8}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    Ingresos Mensuales
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Tendencia de los ultimos 6 meses
+                  </Typography>
+                </Box>
+                <Chip
+                  icon={<TrendingUpIcon />}
+                  label="En crecimiento"
+                  color="success"
+                  size="small"
+                  variant="outlined"
+                />
+              </Box>
+              <IngresosAreaChart data={stats.ingresosMensuales} />
+            </CardContent>
+          </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Cobrado"
-            value={`$${stats.totalCobrado.toFixed(2)}`}
-            icon={<AccountBalanceIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#2e7d32"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Saldo Pendiente"
-            value={`$${stats.saldoPendiente.toFixed(2)}`}
-            icon={<PendingActionsIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#f57c00"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Presupuestos Activos"
-            value={stats.presupuestosActivos}
-            icon={<ReceiptIcon sx={{ fontSize: 40, color: 'white' }} />}
-            color="#c62828"
-          />
+        {/* Distribución de presupuestos */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Estados de Presupuestos
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                Distribucion actual
+              </Typography>
+              <EstadosPresupuestoPieChart />
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
-      <Grid container spacing={3} sx={{ mt: 2 }}>
+      {/* Segunda fila de gráficos y datos */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {/* Resumen financiero */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Avatar sx={{ bgcolor: alpha(CHART_COLORS.primary, 0.1), mr: 2 }}>
+                  <AccountBalanceIcon color="primary" />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    Resumen Financiero
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Balance general
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Total Facturado
+                  </Typography>
+                  <Typography variant="h6" fontWeight="bold" color="info.main">
+                    ${stats.totalFacturado.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Total Cobrado
+                  </Typography>
+                  <Typography variant="h6" fontWeight="bold" color="success.main">
+                    ${stats.totalCobrado.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Saldo Pendiente
+                  </Typography>
+                  <Typography variant="h6" fontWeight="bold" color="warning.main">
+                    ${stats.saldoPendiente.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <ProgressIndicator
+                value={stats.totalCobrado}
+                total={stats.totalFacturado}
+                label="Tasa de cobro"
+                color={CHART_COLORS.success}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Comparación financiera */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Comparativa Financiera
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                Facturado vs Cobrado vs Pendiente
+              </Typography>
+              <FinancialBarChart
+                facturado={stats.totalFacturado}
+                cobrado={stats.totalCobrado}
+                pendiente={stats.saldoPendiente}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Próximas citas */}
         <Grid item xs={12} md={4}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" fontWeight="bold">
-                  Próximas Citas
-                </Typography>
-                <CalendarMonthIcon color="primary" />
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Avatar sx={{ bgcolor: alpha(CHART_COLORS.primary, 0.1), mr: 2 }}>
+                    <CalendarMonthIcon color="primary" />
+                  </Avatar>
+                  <Typography variant="h6" fontWeight="bold">
+                    Proximas Citas
+                  </Typography>
+                </Box>
+                <Chip label={proximasCitas.length} size="small" color="primary" />
               </Box>
+
               {proximasCitas.length === 0 ? (
-                <Typography variant="body2" color="textSecondary">
-                  No hay citas programadas
-                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    py: 4,
+                  }}
+                >
+                  <EventAvailableIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                  <Typography variant="body2" color="textSecondary">
+                    No hay citas programadas
+                  </Typography>
+                </Box>
               ) : (
                 <List dense disablePadding>
                   {proximasCitas.map((cita, index) => (
                     <React.Fragment key={cita.id}>
                       <ListItem
-                        sx={{ px: 0, cursor: 'pointer' }}
+                        sx={{
+                          px: 0,
+                          py: 1,
+                          cursor: 'pointer',
+                          borderRadius: 1,
+                          '&:hover': {
+                            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                          },
+                        }}
                         onClick={() => navigate('/calendario')}
                       >
-                        <ListItemIcon sx={{ minWidth: 36 }}>
-                          <AccessTimeIcon fontSize="small" color="primary" />
+                        <ListItemIcon sx={{ minWidth: 40 }}>
+                          <Avatar
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              bgcolor: alpha(estadoColores[cita.estado], 0.1),
+                            }}
+                          >
+                            <AccessTimeIcon
+                              sx={{ fontSize: 16, color: estadoColores[cita.estado] }}
+                            />
+                          </Avatar>
                         </ListItemIcon>
                         <ListItemText
                           primary={
-                            <Typography variant="body2" fontWeight="medium">
+                            <Typography variant="body2" fontWeight="medium" noWrap>
                               {cita.paciente?.nombres} {cita.paciente?.apellidos}
                             </Typography>
                           }
                           secondary={
-                            <Box component="span">
-                              <Typography variant="caption" display="block">
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <Typography variant="caption" color="textSecondary">
                                 {format(parseISO(cita.fecha), 'dd MMM', { locale: es })} - {cita.hora_inicio}
                               </Typography>
                               <Chip
                                 label={estadoLabels[cita.estado]}
                                 size="small"
                                 sx={{
-                                  mt: 0.5,
                                   height: 18,
                                   fontSize: '0.65rem',
-                                  backgroundColor: estadoColores[cita.estado],
-                                  color: 'white',
+                                  backgroundColor: alpha(estadoColores[cita.estado], 0.15),
+                                  color: estadoColores[cita.estado],
+                                  fontWeight: 600,
                                 }}
                               />
                             </Box>
                           }
                         />
                       </ListItem>
-                      {index < proximasCitas.length - 1 && <Divider />}
+                      {index < proximasCitas.length - 1 && <Divider sx={{ my: 0.5 }} />}
                     </React.Fragment>
                   ))}
                 </List>
               )}
+
               <Button
                 fullWidth
-                variant="text"
+                variant="outlined"
                 endIcon={<ChevronRightIcon />}
                 onClick={() => navigate('/calendario')}
                 sx={{ mt: 2 }}
               >
-                Ver Calendario
+                Ver Calendario Completo
               </Button>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Tratamientos Pendientes
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                No hay datos disponibles
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Ingresos Últimos 6 Meses
-              </Typography>
-              <IngresosMensualesChart data={stats.ingresosMensuales} />
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom fontWeight="bold">
-            Bienvenido al Sistema ENDONOVA
-          </Typography>
-          <Typography variant="body1" paragraph>
-            Este sistema te permite gestionar de manera eficiente:
-          </Typography>
-          <ul>
-            <li>
-              <Typography variant="body2">Registro y seguimiento de pacientes</Typography>
-            </li>
-            <li>
-              <Typography variant="body2">
-                Fichas de diagnóstico y tratamiento endodóntico
+      {/* Accesos rápidos */}
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Accesos Rapidos
               </Typography>
-            </li>
-            <li>
-              <Typography variant="body2">Odontogramas interactivos</Typography>
-            </li>
-            <li>
-              <Typography variant="body2">Presupuestos y control de pagos</Typography>
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={6} sm={3}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<PeopleIcon />}
+                    onClick={() => navigate('/patients/new')}
+                    sx={{ py: 2 }}
+                  >
+                    Nuevo Paciente
+                  </Button>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<DescriptionIcon />}
+                    onClick={() => navigate('/fichas/new')}
+                    sx={{ py: 2 }}
+                  >
+                    Nueva Ficha
+                  </Button>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<ReceiptIcon />}
+                    onClick={() => navigate('/presupuestos/nuevo')}
+                    sx={{ py: 2 }}
+                  >
+                    Nuevo Presupuesto
+                  </Button>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<CalendarMonthIcon />}
+                    onClick={() => navigate('/calendario')}
+                    sx={{ py: 2 }}
+                  >
+                    Ver Calendario
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
   );
 };

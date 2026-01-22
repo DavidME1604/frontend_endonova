@@ -22,7 +22,8 @@ import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
   Description as DescriptionIcon,
-  Payments as PaymentsIcon,
+  ReceiptLong as ReceiptLongIcon,
+  CalendarMonth as CalendarMonthIcon,
   AccountCircle,
   Logout,
 } from '@mui/icons-material';
@@ -32,9 +33,10 @@ const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+  { text: 'Calendario', icon: <CalendarMonthIcon />, path: '/calendario' },
   { text: 'Pacientes', icon: <PeopleIcon />, path: '/patients' },
   { text: 'Fichas', icon: <DescriptionIcon />, path: '/fichas' },
-  { text: 'Presupuestos', icon: <PaymentsIcon />, path: '/presupuestos' },
+  { text: 'Presupuestos', icon: <ReceiptLongIcon />, path: '/presupuestos' },
 ];
 
 const Layout = () => {

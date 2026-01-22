@@ -12,15 +12,27 @@ import {
   CircularProgress,
   Tabs,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Alert,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   Print as PrintIcon,
+  Add as AddIcon,
+  Payment as PaymentIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
-import { fichaService } from '../../services/api';
+import { fichaService, presupuestoService } from '../../services/api';
 import { toast } from 'react-toastify';
 import OdontogramaInteractivo from '../Odontograma/OdontogramaInteractivo';
+import PagoDialog from '../Presupuestos/PagoDialog';
 
 const FichaDetail = () => {
   const navigate = useNavigate();
@@ -29,9 +41,22 @@ const FichaDetail = () => {
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
 
+  // Estados para presupuesto
+  const [presupuesto, setPresupuesto] = useState(null);
+  const [actos, setActos] = useState([]);
+  const [pagos, setPagos] = useState([]);
+  const [loadingPresupuesto, setLoadingPresupuesto] = useState(false);
+  const [pagoDialogOpen, setPagoDialogOpen] = useState(false);
+
   useEffect(() => {
     fetchFicha();
   }, [id]);
+
+  useEffect(() => {
+    if (tabValue === 2 && id) {
+      fetchPresupuesto();
+    }
+  }, [tabValue, id]);
 
   const fetchFicha = async () => {
     try {
@@ -49,8 +74,49 @@ const FichaDetail = () => {
     }
   };
 
+  const fetchPresupuesto = async () => {
+    try {
+      setLoadingPresupuesto(true);
+      const response = await presupuestoService.getByFicha(id);
+      if (response.data.success) {
+        setPresupuesto(response.data.data.presupuesto);
+        setActos(response.data.data.actos || []);
+        setPagos(response.data.data.pagos || []);
+      }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // No hay presupuesto para esta ficha
+        setPresupuesto(null);
+        setActos([]);
+        setPagos([]);
+      } else {
+        console.error('Error fetching presupuesto:', error);
+        toast.error('Error al cargar el presupuesto');
+      }
+    } finally {
+      setLoadingPresupuesto(false);
+    }
+  };
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  const handlePagoSuccess = () => {
+    setPagoDialogOpen(false);
+    fetchPresupuesto();
+    toast.success('Pago registrado exitosamente');
+  };
+
+  const formatCurrency = (value) => {
+    return `$${parseFloat(value || 0).toFixed(2)}`;
+  };
+
+  const getEstadoPago = () => {
+    if (!presupuesto) return null;
+    if (parseFloat(presupuesto.saldo || 0) == 0) return { label: 'Pagado', color: 'success' };
+    if (parseFloat(presupuesto.total_pagado || 0) > 0) return { label: 'Parcial', color: 'warning' };
+    return { label: 'Pendiente', color: 'error' };
   };
 
   if (loading) {
@@ -320,17 +386,202 @@ const FichaDetail = () => {
 
       {/* Tab 2: Presupuesto */}
       {tabValue === 2 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Presupuesto y Pagos
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Typography variant="body2" color="textSecondary">
-              Módulo de presupuestos en desarrollo
-            </Typography>
-          </CardContent>
-        </Card>
+        <>
+          {loadingPresupuesto ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : !presupuesto ? (
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                <Typography variant="h6" color="textSecondary" gutterBottom>
+                  No hay presupuesto asociado a esta ficha
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                  Crea un presupuesto para registrar los procedimientos y pagos del tratamiento.
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate(`/presupuestos/nuevo?ficha_id=${id}`)}
+                >
+                  Crear Presupuesto
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Resumen del Presupuesto */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      Resumen del Presupuesto
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Chip
+                        label={getEstadoPago()?.label}
+                        color={getEstadoPago()?.color}
+                        size="small"
+                      />
+                      <Button
+                        size="small"
+                        startIcon={<VisibilityIcon />}
+                        onClick={() => navigate(`/presupuestos/${presupuesto.id}`)}
+                      >
+                        Ver Detalle
+                      </Button>
+                    </Box>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={4}>
+                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          Total Presupuesto
+                        </Typography>
+                        <Typography variant="h4" fontWeight="bold" color="primary">
+                          {formatCurrency(presupuesto.total)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#e8f5e9', borderRadius: 1 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          Total Pagado
+                        </Typography>
+                        <Typography variant="h4" fontWeight="bold" color="success.main">
+                          {formatCurrency(presupuesto.total_pagado)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: parseFloat(presupuesto.saldo || 0) > 0 ? '#fff3e0' : '#e8f5e9', borderRadius: 1 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          Saldo Pendiente
+                        </Typography>
+                        <Typography variant="h4" fontWeight="bold" color={parseFloat(presupuesto.saldo || 0) > 0 ? 'warning.main' : 'success.main'}>
+                          {formatCurrency(presupuesto.saldo)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+
+              {/* Tabla de Actos/Procedimientos */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Procedimientos
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>#</strong></TableCell>
+                          <TableCell><strong>Actividad</strong></TableCell>
+                          <TableCell align="right"><strong>Costo Unit.</strong></TableCell>
+                          <TableCell align="center"><strong>Cant.</strong></TableCell>
+                          <TableCell align="right"><strong>Total</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {actos.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} align="center">
+                              <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
+                                No hay procedimientos registrados
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          actos.map((acto) => (
+                            <TableRow key={acto.id}>
+                              <TableCell>{acto.numero}</TableCell>
+                              <TableCell>{acto.actividad}</TableCell>
+                              <TableCell align="right">{formatCurrency(acto.costo_unitario)}</TableCell>
+                              <TableCell align="center">{acto.cantidad}</TableCell>
+                              <TableCell align="right">{formatCurrency(acto.total)}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Tabla de Pagos */}
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      Historial de Pagos
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<PaymentIcon />}
+                      onClick={() => setPagoDialogOpen(true)}
+                      disabled={parseFloat(presupuesto.saldo || 0) == 0}
+                    >
+                      Registrar Pago
+                    </Button>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>Fecha</strong></TableCell>
+                          <TableCell><strong>Descripción</strong></TableCell>
+                          <TableCell align="right"><strong>Valor</strong></TableCell>
+                          <TableCell align="right"><strong>Saldo Ant.</strong></TableCell>
+                          <TableCell align="right"><strong>Saldo Act.</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {pagos.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} align="center">
+                              <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
+                                No hay pagos registrados
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          pagos.map((pago) => (
+                            <TableRow key={pago.id}>
+                              <TableCell>
+                                {new Date(pago.fecha).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>{pago.actividad || '-'}</TableCell>
+                              <TableCell align="right" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                {formatCurrency(pago.valor)}
+                              </TableCell>
+                              <TableCell align="right">{formatCurrency(pago.saldo_anterior)}</TableCell>
+                              <TableCell align="right">{formatCurrency(pago.saldo_actual)}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Dialog para registrar pago */}
+              <PagoDialog
+                open={pagoDialogOpen}
+                onClose={() => setPagoDialogOpen(false)}
+                presupuesto={presupuesto}
+                onSuccess={handlePagoSuccess}
+              />
+            </>
+          )}
+        </>
       )}
     </Box>
   );

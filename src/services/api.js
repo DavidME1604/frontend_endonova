@@ -75,6 +75,7 @@ export const odontogramaService = {
 
 // PRESUPUESTO SERVICES
 export const presupuestoService = {
+  getAll: (params) => api.get('/presupuestos', { params }),
   getById: (id) => api.get(`/presupuestos/${id}`),
   getByFicha: (fichaId) => api.get(`/presupuestos/ficha/${fichaId}`),
   create: (data) => api.post('/presupuestos', data),
@@ -82,6 +83,20 @@ export const presupuestoService = {
   delete: (id) => api.delete(`/presupuestos/${id}`),
   getPagos: (id) => api.get(`/presupuestos/${id}/pagos`),
   addPago: (id, data) => api.post(`/presupuestos/${id}/pagos`, data),
+  getEstadisticas: () => api.get('/presupuestos/estadisticas'),
+};
+
+// CITA SERVICES
+export const citaService = {
+  getAll: (params) => api.get('/citas', { params }),
+  getById: (id) => api.get(`/citas/${id}`),
+  getByFecha: (fecha) => api.get(`/citas/fecha/${fecha}`),
+  getByPaciente: (pacienteId) => api.get(`/citas/paciente/${pacienteId}`),
+  getProximas: (dias = 7) => api.get('/citas/proximas', { params: { dias } }),
+  create: (data) => api.post('/citas', data),
+  update: (id, data) => api.put(`/citas/${id}`, data),
+  updateEstado: (id, estado) => api.patch(`/citas/${id}/estado`, { estado }),
+  delete: (id) => api.delete(`/citas/${id}`),
 };
 
 export default api;

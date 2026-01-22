@@ -27,6 +27,14 @@ import FichaList from './components/Fichas/FichaList';
 import FichaForm from './components/Fichas/FichaForm';
 import FichaDetail from './components/Fichas/FichaDetail';
 
+// Presupuestos
+import PresupuestoList from './components/Presupuestos/PresupuestoList';
+import PresupuestoForm from './components/Presupuestos/PresupuestoForm';
+import PresupuestoDetail from './components/Presupuestos/PresupuestoDetail';
+
+// Citas
+import { CalendarioCitas, AgendaDia } from './components/Citas';
+
 const theme = createTheme({
   palette: {
     primary: {
@@ -119,7 +127,14 @@ function App() {
               <Route path="fichas/:id/edit" element={<FichaForm />} />
 
               {/* Presupuestos */}
-              <Route path="presupuestos" element={<div>Presupuestos - En desarrollo</div>} />
+              <Route path="presupuestos" element={<PresupuestoList />} />
+              <Route path="presupuestos/nuevo" element={<PresupuestoForm />} />
+              <Route path="presupuestos/:id" element={<PresupuestoDetail />} />
+              <Route path="presupuestos/:id/editar" element={<PresupuestoForm />} />
+
+              {/* Calendario de Citas */}
+              <Route path="calendario" element={<CalendarioCitas />} />
+              <Route path="agenda" element={<AgendaDia />} />
             </Route>
 
             {/* Catch all */}

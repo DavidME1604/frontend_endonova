@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,6 +16,9 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  InputBase,
+  alpha,
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -28,11 +31,13 @@ import {
   Logout,
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeMode } from '../../contexts/ThemeContext';
+import GlobalSearch from './GlobalSearch';
 
 const drawerWidth = 240;
 
@@ -51,6 +56,25 @@ const Layout = () => {
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Atajo de teclado Ctrl+K para abrir búsqueda
+  const handleKeyDown = useCallback((event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+      event.preventDefault();
+      setSearchOpen(true);
+    }
+    if (event.key === 'Escape' && searchOpen) {
+      setSearchOpen(false);
+    }
+  }, [searchOpen]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -69,6 +93,14 @@ const Layout = () => {
     navigate('/login');
   };
 
+  const handleOpenSearch = () => {
+    setSearchOpen(true);
+  };
+
+  const handleCloseSearch = () => {
+    setSearchOpen(false);
+  };
+
   const drawer = (
     <Box>
       <Toolbar>
@@ -77,6 +109,31 @@ const Layout = () => {
         </Typography>
       </Toolbar>
       <Divider />
+
+      {/* Búsqueda en sidebar para móvil */}
+      <Box sx={{ p: 2, display: { xs: 'block', sm: 'none' } }}>
+        <Box
+          onClick={handleOpenSearch}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            p: 1.5,
+            borderRadius: 2,
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            cursor: 'pointer',
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.primary.main, 0.12),
+            },
+          }}
+        >
+          <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+          <Typography variant="body2" color="textSecondary">
+            Buscar...
+          </Typography>
+        </Box>
+      </Box>
+
       <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
@@ -109,16 +166,74 @@ const Layout = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Sistema de Gestión Odontológica
-          </Typography>
+
+          {/* Barra de búsqueda en desktop */}
+          <Box
+            onClick={handleOpenSearch}
+            sx={{
+              display: { xs: 'none', sm: 'flex' },
+              alignItems: 'center',
+              backgroundColor: alpha(theme.palette.common.white, 0.15),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.common.white, 0.25),
+              },
+              borderRadius: 2,
+              px: 2,
+              py: 0.75,
+              cursor: 'pointer',
+              minWidth: 280,
+              mr: 2,
+            }}
+          >
+            <SearchIcon sx={{ color: 'inherit', mr: 1, opacity: 0.7 }} />
+            <Typography
+              variant="body2"
+              sx={{ color: 'inherit', opacity: 0.7, flexGrow: 1 }}
+            >
+              Buscar...
+            </Typography>
+            <Chip
+              label="Ctrl+K"
+              size="small"
+              sx={{
+                height: 22,
+                fontSize: '0.7rem',
+                backgroundColor: alpha(theme.palette.common.white, 0.2),
+                color: 'inherit',
+                '& .MuiChip-label': {
+                  px: 1,
+                },
+              }}
+            />
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }} />
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Botón de búsqueda para móvil en AppBar */}
+            <Tooltip title="Buscar (Ctrl+K)">
+              <IconButton
+                color="inherit"
+                onClick={handleOpenSearch}
+                sx={{ display: { xs: 'flex', sm: 'none' } }}
+              >
+                <SearchIcon />
+              </IconButton>
+            </Tooltip>
+
             <Tooltip title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}>
               <IconButton color="inherit" onClick={toggleTheme}>
                 {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
             </Tooltip>
-            <Typography variant="body2" sx={{ ml: 1 }}>{user?.nombre}</Typography>
+
+            <Typography
+              variant="body2"
+              sx={{ ml: 1, display: { xs: 'none', md: 'block' } }}
+            >
+              {user?.nombre}
+            </Typography>
+
             <IconButton
               size="large"
               aria-label="account of current user"
@@ -135,7 +250,7 @@ const Layout = () => {
               id="menu-appbar"
               anchorEl={anchorEl}
               anchorOrigin={{
-                vertical: 'top',
+                vertical: 'bottom',
                 horizontal: 'right',
               }}
               keepMounted
@@ -162,6 +277,7 @@ const Layout = () => {
           </Box>
         </Toolbar>
       </AppBar>
+
       <Box
         component="nav"
         sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
@@ -191,6 +307,7 @@ const Layout = () => {
           {drawer}
         </Drawer>
       </Box>
+
       <Box
         component="main"
         sx={{
@@ -204,6 +321,9 @@ const Layout = () => {
         <Toolbar />
         <Outlet />
       </Box>
+
+      {/* Modal de búsqueda global */}
+      <GlobalSearch open={searchOpen} onClose={handleCloseSearch} />
     </Box>
   );
 };

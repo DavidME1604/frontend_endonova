@@ -30,6 +30,7 @@ import {
   Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { fichaService, presupuestoService } from '../../services/api';
+import { generarFichaEndodonticaPDF } from '../../services/pdfService';
 import { toast } from 'react-toastify';
 import OdontogramaInteractivo from '../Odontograma/OdontogramaInteractivo';
 import PagoDialog from '../Presupuestos/PagoDialog';
@@ -108,6 +109,51 @@ const FichaDetail = () => {
     toast.success('Pago registrado exitosamente');
   };
 
+  const handlePrint = async () => {
+    try {
+      // Cargar presupuesto si no está cargado
+      let presupuestoData = presupuesto;
+      let actosData = actos;
+      let pagosData = pagos;
+
+      if (!presupuestoData) {
+        try {
+          const response = await presupuestoService.getByFicha(id);
+          if (response.data.success) {
+            presupuestoData = response.data.data.presupuesto;
+            actosData = response.data.data.actos || [];
+            pagosData = response.data.data.pagos || [];
+          }
+        } catch (error) {
+          // No hay presupuesto, continuar sin él
+          presupuestoData = null;
+          actosData = [];
+          pagosData = [];
+        }
+      }
+
+      // Debug: mostrar datos en consola
+      console.log('=== DATOS PARA PDF ===');
+      console.log('Ficha:', ficha);
+      console.log('Presupuesto:', presupuestoData);
+      console.log('Actos:', actosData);
+      console.log('Pagos:', pagosData);
+
+      if (!ficha) {
+        toast.error('No hay datos de ficha para generar el PDF');
+        return;
+      }
+
+      const nombreArchivo = generarFichaEndodonticaPDF(ficha, presupuestoData, actosData, pagosData);
+      toast.success(`PDF generado: ${nombreArchivo}`);
+    } catch (error) {
+      console.error('=== ERROR AL GENERAR PDF ===');
+      console.error('Mensaje:', error.message);
+      console.error('Stack:', error.stack);
+      toast.error(`Error al generar el PDF: ${error.message}`);
+    }
+  };
+
   const formatCurrency = (value) => {
     return `$${parseFloat(value || 0).toFixed(2)}`;
   };
@@ -145,7 +191,7 @@ const FichaDetail = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<PrintIcon />}>
+          <Button variant="outlined" startIcon={<PrintIcon />} onClick={handlePrint}>
             Imprimir
           </Button>
           <Button

@@ -26,8 +26,13 @@ import {
   CalendarMonth as CalendarMonthIcon,
   AccountCircle,
   Logout,
+  Brightness4 as Brightness4Icon,
+  Brightness7 as Brightness7Icon,
 } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import Tooltip from '@mui/material/Tooltip';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeMode } from '../../contexts/ThemeContext';
 
 const drawerWidth = 240;
 
@@ -42,6 +47,8 @@ const menuItems = [
 const Layout = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { mode, toggleTheme, isDarkMode } = useThemeMode();
+  const theme = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -105,8 +112,13 @@ const Layout = () => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Sistema de Gestión Odontológica
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2">{user?.nombre}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Tooltip title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}>
+              <IconButton color="inherit" onClick={toggleTheme}>
+                {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+              </IconButton>
+            </Tooltip>
+            <Typography variant="body2" sx={{ ml: 1 }}>{user?.nombre}</Typography>
             <IconButton
               size="large"
               aria-label="account of current user"
@@ -186,7 +198,7 @@ const Layout = () => {
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
-          backgroundColor: '#f5f5f5',
+          backgroundColor: theme.palette.background.default,
         }}
       >
         <Toolbar />

@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeModeProvider } from './contexts/ThemeContext';
 
 // Auth Components
 import Login from './components/Auth/Login';
@@ -35,28 +35,6 @@ import PresupuestoDetail from './components/Presupuestos/PresupuestoDetail';
 // Citas
 import { CalendarioCitas, AgendaDia } from './components/Citas';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-  },
-});
-
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -79,7 +57,7 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeModeProvider>
       <CssBaseline />
       <AuthProvider>
         <Router>
@@ -153,7 +131,7 @@ function App() {
           pauseOnHover
         />
       </AuthProvider>
-    </ThemeProvider>
+    </ThemeModeProvider>
   );
 }
 

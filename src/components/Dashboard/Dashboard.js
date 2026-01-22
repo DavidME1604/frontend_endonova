@@ -27,6 +27,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { patientService, fichaService, presupuestoService, citaService } from '../../services/api';
@@ -61,6 +62,8 @@ const StatCard = ({ title, value, icon, color }) => (
 );
 
 const IngresosMensualesChart = ({ data }) => {
+  const theme = useTheme();
+
   if (!data || data.length === 0) {
     return (
       <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 3 }}>
@@ -87,7 +90,7 @@ const IngresosMensualesChart = ({ data }) => {
             sx={{
               width: '100%',
               height: 24,
-              backgroundColor: '#e0e0e0',
+              backgroundColor: theme.palette.mode === 'dark' ? '#333333' : '#e0e0e0',
               borderRadius: 1,
               overflow: 'hidden',
             }}
@@ -96,7 +99,7 @@ const IngresosMensualesChart = ({ data }) => {
               sx={{
                 width: `${(item.ingresos / maxValue) * 100}%`,
                 height: '100%',
-                backgroundColor: '#1976d2',
+                backgroundColor: theme.palette.primary.main,
                 transition: 'width 0.3s ease',
               }}
             />

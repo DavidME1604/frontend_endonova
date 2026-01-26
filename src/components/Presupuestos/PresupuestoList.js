@@ -73,10 +73,12 @@ const PresupuestoList = () => {
   };
 
   const getEstado = (presupuesto) => {
-    const saldo = presupuesto.saldo || (presupuesto.total - presupuesto.total_pagado);
-    if (saldo === 0 || presupuesto.total_pagado >= presupuesto.total) {
+    const total = parseFloat(presupuesto.total) || 0;
+    const totalPagado = parseFloat(presupuesto.total_pagado) || 0;
+    const saldo = parseFloat(presupuesto.saldo) || (total - totalPagado);
+    if (saldo === 0 || totalPagado >= total) {
       return 'pagado';
-    } else if (presupuesto.total_pagado > 0) {
+    } else if (totalPagado > 0) {
       return 'parcial';
     }
     return 'pendiente';
@@ -222,7 +224,7 @@ const PresupuestoList = () => {
                       </TableRow>
                     ) : (
                       presupuestos.map((presupuesto) => {
-                        const saldo = presupuesto.saldo || (presupuesto.total - presupuesto.total_pagado);
+                        const saldo = parseFloat(presupuesto.saldo) || (parseFloat(presupuesto.total || 0) - parseFloat(presupuesto.total_pagado || 0));
                         return (
                           <TableRow key={presupuesto.id} hover>
                             <TableCell>{presupuesto.id}</TableCell>

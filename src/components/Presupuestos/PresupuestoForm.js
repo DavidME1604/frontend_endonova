@@ -143,7 +143,7 @@ const PresupuestoForm = () => {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       // Calcular el total
-      const total = values.actos.reduce((sum, acto) => sum + acto.total, 0);
+      const total = values.actos.reduce((sum, acto) => sum + parseFloat(acto.total || 0), 0);
 
       const dataToSend = {
         ficha_id: values.ficha_id,
@@ -169,8 +169,8 @@ const PresupuestoForm = () => {
 
   const handleProcedimientoChange = (index, procedimiento, setFieldValue, values) => {
     if (procedimiento) {
-      const costoUnitario = procedimiento.costo;
-      const cantidad = values.actos[index].cantidad || 1;
+      const costoUnitario = parseFloat(procedimiento.costo) || 0;
+      const cantidad = parseInt(values.actos[index].cantidad) || 1;
       const total = costoUnitario * cantidad;
 
       setFieldValue(`actos.${index}.actividad`, procedimiento.actividad);
@@ -180,14 +180,14 @@ const PresupuestoForm = () => {
   };
 
   const handleCantidadChange = (index, cantidad, setFieldValue, values) => {
-    const costoUnitario = values.actos[index].costo_unitario || 0;
-    const total = costoUnitario * cantidad;
+    const costoUnitario = parseFloat(values.actos[index].costo_unitario) || 0;
+    const total = costoUnitario * parseInt(cantidad || 1);
     setFieldValue(`actos.${index}.cantidad`, cantidad);
     setFieldValue(`actos.${index}.total`, total);
   };
 
   const calculateTotal = (actos) => {
-    return actos.reduce((sum, acto) => sum + (acto.total || 0), 0);
+    return actos.reduce((sum, acto) => sum + parseFloat(acto.total || 0), 0);
   };
 
   if (loading) {
@@ -319,7 +319,7 @@ const PresupuestoForm = () => {
                                         value={acto.costo_unitario}
                                         onChange={(e) => {
                                           const costoUnitario = parseFloat(e.target.value) || 0;
-                                          const total = costoUnitario * acto.cantidad;
+                                          const total = costoUnitario * parseInt(acto.cantidad || 1);
                                           setFieldValue(`actos.${index}.costo_unitario`, costoUnitario);
                                           setFieldValue(`actos.${index}.total`, total);
                                         }}
@@ -349,7 +349,7 @@ const PresupuestoForm = () => {
                                     </TableCell>
                                     <TableCell>
                                       <Typography variant="body2" fontWeight="bold">
-                                        ${(acto.total || 0).toFixed(2)}
+                                        ${parseFloat(acto.total || 0).toFixed(2)}
                                       </Typography>
                                     </TableCell>
                                     <TableCell align="center">
